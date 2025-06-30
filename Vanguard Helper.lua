@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("0.9 alpha")
+script_version("1.0 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -2844,7 +2844,7 @@ function sampev.onServerMessage(color,text)
 			sampSendChat('/time')
 		end)
 	end
-	if (text:find('Conor%[%d+%]') and getARZServerNumber():find('20')) or text:find('%[20%]Conor') then
+	if (text:find('Robert_Wagner%[%d+%]') and getARZServerNumber():find('01')) or text:find('%[01%]Robert_Wagner') then
 		local lastColor = text:match("(.+){%x+}$")
    		if not lastColor then
 			lastColor = "{" .. rgba_to_hex(color) .. "}"
@@ -2852,22 +2852,22 @@ function sampev.onServerMessage(color,text)
 		if text:find('%[VIP ADV%]') or text:find('%[FOREVER%]') then
 			lastColor = "{FFFFFF}"
 		end
-		if text:find('%[20%]Conor%[%d+%]') then
-			-- Случай 2: [20]Conor[123]
-			local id = text:match('%[20%]Conor%[(%d+)%]') or ''
-			text = string.gsub(text, '%[20%]Conor%[%d+%]', message_color_hex .. '[20]Milky[' .. id .. ']' .. lastColor)
+		if text:find('%[01%]Robert_Wagner%[%d+%]') then
+			-- Случай 2: [01]Robert_Wagner[123]
+			local id = text:match('%[01%]Robert_Wagner%[(%d+)%]') or ''
+			text = string.gsub(text, '%[01%]Robert_Wagner%[%d+%]', message_color_hex .. '[01]Milky[' .. id .. ']' .. lastColor)
 		
-		elseif text:find('%[20%]Conor') then
-			-- Случай 1: [20]Conor
-			text = string.gsub(text, '%[20%]Conor', message_color_hex .. '[20]Milky' .. lastColor)
+		elseif text:find('%[01%]Robert_Wagner') then
+			-- Случай 1: [01]Robert_Wagner
+			text = string.gsub(text, '%[01%]Robert_Wagner', message_color_hex .. '[01]Milky' .. lastColor)
 		
-		elseif text:find('Conor%[%d+%]') then
-			-- Случай 3: Conor[123]
-			local id = text:match('Conor%[(%d+)%]') or ''
-			text = string.gsub(text, 'Conor%[%d+%]', message_color_hex .. 'Milky[' .. id .. ']' .. lastColor)
-		elseif text:find('Conor') then
-			-- Случай 3: Conor
-			text = string.gsub(text, 'Conor', message_color_hex .. 'Milky' .. lastColor)
+		elseif text:find('Robert_Wagner%[%d+%]') then
+			-- Случай 3: Robert_Wagner[123]
+			local id = text:match('Robert_Wagner%[(%d+)%]') or ''
+			text = string.gsub(text, 'Robert_Wagner%[%d+%]', message_color_hex .. 'Milky[' .. id .. ']' .. lastColor)
+		elseif text:find('Robert_Wagner') then
+			-- Случай 3: Robert_Wagner
+			text = string.gsub(text, 'Robert_Wagner', message_color_hex .. 'Milky' .. lastColor)
 		end
 		return {color,text}
 	end
@@ -2961,12 +2961,12 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
                     settings.player_info.fraction_tag = "Неизвестно"
                 else
                     sampAddChatMessage('[Vanguard Helper] {ffffff}Ваша организация обнаружена, это: '..settings.player_info.fraction, message_color)
-                    if settings.player_info.fraction == 'ФСБ' or settings.player_info.fraction == 'Полиция LS' then
+                    if settings.player_info.fraction == 'ФСБ' then
                         settings.player_info.fraction_tag = 'ФСБ'
-                    elseif settings.player_info.fraction == 'Полиция ЛВ' or settings.player_info.fraction == 'Полиция LV' then
-                        settings.player_info.fraction_tag = 'ЛВПД'
-                    elseif settings.player_info.fraction == 'Полиция СФ' or settings.player_info.fraction == 'Полиция SF' then
-                        settings.player_info.fraction_tag = 'СФПД'
+                    elseif settings.player_info.fraction == 'Полиция округа' or settings.player_info.fraction == 'Полиция округа' then
+                        settings.player_info.fraction_tag = 'КТЦ'
+                    elseif settings.player_info.fraction == 'Городская полиция' or settings.player_info.fraction == 'Городская полиция' then
+                        settings.player_info.fraction_tag = 'ГУВД'
                     else
                         settings.player_info.fraction_tag = 'ПД'
                     end
@@ -4763,7 +4763,7 @@ imgui.OnFrame(
 				imgui.Separator()
 				imgui.Text(fa.CIRCLE_INFO..u8" Установленная версия хелпера: " .. u8(thisScript().version))
 				imgui.Separator()
-				imgui.Text(fa.CIRCLE_USER..u8" Wagner | Grace")
+				imgui.Text(fa.CIRCLE_USER..u8"  Wagner | Greys")
 				-- imgui.SameLine()
 				-- if imgui.SmallButton(u8'Проверить обновления') then
 				-- 	if string.rupper(settings.general.version):find('VIP') then
