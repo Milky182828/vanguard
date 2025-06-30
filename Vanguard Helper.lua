@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("0.3 alpha")
+script_version("0.4 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -28,16 +28,16 @@ local default_settings = {
 		auto_doklad_damage = true,
 		auto_doklad_arrest = true,
 		auto_change_code_siren = true,
-		auto_update_wanteds = true,
+		auto_update_wanteds = false,
 		auto_find_wanteds = false,
-		auto_update_members = true,
+		auto_update_members = false,
 		auto_notify_payday = true,
 		auto_notify_port = true,
-		auto_accept_docs = true,
+		auto_accept_docs = false,
 		auto_uval = false,
 		auto_time = true,
-		auto_clicker_situation = true,
-		auto_documentation = true,
+		auto_clicker_situation = false,
+		auto_documentation = false,
 		moonmonet_theme_enable = true,
 		moonmonet_theme_color = 40703,
 		mobile_fastmenu_button = true,
@@ -228,7 +228,7 @@ local notes = {
 	note = {
 		{ note_name = 'Зарплата', note_text = 'Почему ваша зарплата может быть меньше, чем указано:&- Если у вас нету жилья (дом/отель) то у вас будет -20 процентов зп&- Если у вас есть выговор то у вас будет -20 процентов зп&- Из-за фикса экономики (от разрабов) у вас будет -10 процентов зп&&Как повысить свою зарплату:&- Вступите в фулл семью с флагом чтобы иметь +7 процентов зп &( на 20 сервере это наша семья Martelli )&- Получите \"Военный билет\" чтобы иметь +15 процентов зп&- Купите охранника на \"зп фракции\" чтобы иметь до +25 процентов зп&- Повышайтесь на ранг повыше'},
 		{ note_name = 'Тен-коды', note_text = '10-1 - Сбор всех офицеров на дежурстве.&10-2 - Вышел в патруль.&10-2R - Закончил патруль.&10-3 - Радиомолчание.&10-4 - Принято.&10-5 - Повторите.&10-6 - Не принято/неверно/нет.&10-7 - Ожидайте.&10-8 - Не доступен/занят.&10-14 - Запрос транспортировки.&10-15 - Подозреваемые арестованы.&10-18 - Требуется поддержка дополнительных юнитов.&10-20 - Локация.&10-21 - Статус и местонахождение.&10-22 - Выдвигайтесь к локации.&10-27 - Меняю маркировку патруля.&10-30 - Дорожно-транспортное происшествие.&10-40 - Большое скопление людей (более 4).&10-41 - Нелегальная активность.&10-46 - Провожу обыск.&10-55 - Траффик стоп.&10-57 VICTOR - Погоня за автомобилем.&10-57 FOXTROT - Пешая погоня.&10-66 - Траффик стоп повышенного риска.&10-70 - Запрос поддержки.&10-71 - Запрос медицинской поддержки.&10-88 - Теракт/ЧС.&10-99 - Ситуация урегулирована.&10-100 Временно недоступен для вызовов.' },
-		{ note_name = 'Ситуационные коды', note_text = 'CODE 0 - Офицер ранен.&CODE 1 - Офицер в бедственном положении, нужна помощь всех юнитов.&CODE 2 - Обычный вызов [без сирен/стробоскопов/соблюдение ПДД].&CODE 2 HIGHT - Приоритетный вызов [без сирен/стробоскопов/соблюдение ПДД].&CODE 3 - Срочный вызов [сирены, стробоскопы, игнорирования ПДД].&CODE 4 - Стабильно, помощь не требуется.&Code 4 ADAM - Помощь не требуется, но офицеры поблизости должны быть готовы оказать помощь.&CODE 5 - Офицерам держаться подальше от опасного места.&CODE 6 - Задерживаюсь на месте [включая локацию и причину,например, 911].&CODE 7 - Перерыв на обед.&CODE 30 - Срабатывание "тихой" сигнализации на месте происшествия.&CODE 30 RINGER - Срабатывание "громкой сигнализации на месте происшествия.&CODE 37 - Обнаружение угнанного транспортного средства.&Сode TOM - Офицеру требуется Тайзер.' },
+		{ note_name = 'Ситуационные коды', note_text = 'КОД 0 - Офицер ранен.&КОД 1 - Офицер в бедственном положении, нужна помощь всех юнитов.&КОД 2 - Обычный вызов [без сирен/стробоскопов/соблюдение ПДД].&КОД 2 HIGHT - Приоритетный вызов [без сирен/стробоскопов/соблюдение ПДД].&КОД 3 - Срочный вызов [сирены, стробоскопы, игнорирования ПДД].&КОД 4 - Стабильно, помощь не требуется.&Code 4 ADAM - Помощь не требуется, но офицеры поблизости должны быть готовы оказать помощь.&КОД 5 - Офицерам держаться подальше от опасного места.&КОД 6 - Задерживаюсь на месте [включая локацию и причину,например, 911].&КОД 7 - Перерыв на обед.&КОД 30 - Срабатывание "тихой" сигнализации на месте происшествия.&КОД 30 RINGER - Срабатывание "громкой сигнализации на месте происшествия.&КОД 37 - Обнаружение угнанного транспортного средства.&Сode TOM - Офицеру требуется Тайзер.' },
 		{ note_name = 'Маркировки патруля', note_text = 'Основные:&ADAM [A] - Патруль из 2/3 офицеров на крузере.&LINCOLN [L] - Одиночный патруль на крузере.&MARY [M] - Одиночный патруль на мотоцикле.&HENRY [H] - Высокоскоростой патруль.&AIR [AIR] - Воздушный патруль.&Air Support Division [ASD] - Воздушная поддержка.&&Дополнительные:&CHARLIE [C] - Группа захвата.&ROBERT [R] - Отдел Детективов.&SUPERVISOR [SV] - Руководящий состав.&DAVID [D] - Cпециальный отдел SWAT.&EDWARD [E] - Эвакуатор полиции.&NORA [N] - немаркированная единица патруля.',},
 	}
 }
@@ -491,7 +491,7 @@ local commands = {
 		{ cmd = '55', description = 'Проведение 10-55', text = '/r {my_doklad_nick} - ДИСПЕТЧЕР. Провожу 10-55 в районе {get_area} ({get_square}), СODE 4.&/m Водитель{get_storecar_model}, внимание!&/m Немедленно снизьте скорость и прижмитесь к обочине!&/m После остановки заглушите двигатель, держите руки на руле и не выходите из транспорта.&/m В случае неподчинения вы будете обьявлены в розыск, и по вам будет открыт огонь!', arg = '', enable = true, waiting = '2.100', bind = "[101]" },
 		{ cmd = '66', description = 'Проведение 10-66', text = '/r {my_doklad_nick} - ДИСПЕТЧЕР. Провожу 10-66 в районе {get_area} ({get_square}), СODE 3!&/m Водитель{get_storecar_model}, внимание!&/m Немедленно снизьте скорость и прижмитесь к обочине!&/m В случае неподчинения вы будете обьявлены в розыск, и по вам будет открыт огонь!', arg = '', enable = true, waiting = '2.100', bind = "[102]" },
 		{ cmd = 'zd' , description = 'Приветствие игрока' , text = 'Здраствуйте {get_ru_nick({arg_id})}&Я {my_ru_nick} - {fraction_rank} {fraction_tag}&Чем я могу Вам помочь?', arg = '{arg_id}' , enable = true , waiting = '2.100', bind = "{}" },
-		{ cmd = 'bk' , description = 'Запрос помощи с координатами' , text = '/r {my_doklad_nick} - ДИСПЕТЧЕР. Срочно нужна помощь, высылаю свои координаты. CODE 1&/me достаёт свой КПК и отправляет координаты в базу данных {fraction_tag}&/bk 10-20', arg = '' , enable = true , waiting = '2.100', bind = "{}" },
+		{ cmd = 'bk' , description = 'Запрос помощи с координатами' , text = '/r {my_doklad_nick} - ДИСПЕТЧЕР. Срочно нужна помощь, высылаю свои координаты. КОД 1&/me достаёт свой КПК и отправляет координаты в базу данных {fraction_tag}&/bk 10-20', arg = '' , enable = true , waiting = '2.100', bind = "{}" },
 		{ cmd = 'siren' , description = 'Вкл/выкл мигалок в т/с' , text = '{switchCarSiren}', arg = '' , enable = true , waiting = '2.100', bind = "{}" },
         { cmd = 'cure' , description = 'Поднять игрока из стадии' ,  text = '/me наклоняется над человеком, и прощупывает его пульс на сонной артерии&/cure {arg_id}&/do Пульс отсутствует.&/me начинает делать человеку непрямой массаж сердца, время от времени проверяя пульс&/do Спустя несколько минут сердце человека начало биться.&/do Человек пришел в сознание.&/todo Отлично*улыбаясь' , arg = '{arg_id}' , enable = true , waiting = '2.100' , bind = "{}"  },
 		{ cmd = 'time' , description = 'Посмотреть время' ,  text = '/me взглянул{sex} на свои часы с гравировкой "Vanguard" и посмотрел{sex} время&/time' , arg = '' , enable = true, waiting = '2.100' , bind = "{}"  },
@@ -1008,14 +1008,14 @@ local PatroolInfoMenu = imgui.new.bool()
 local patrool_start_time = 0
 local patrool_current_time = 0
 local patrool_time = 0
-local patrool_code = 'CODE 4'
+local patrool_code = 'КОД 4'
 local patrool_mark = 'ADAM'
 local patrool_active = false
 local ComboPatroolMark = imgui.new.int(0)
 local combo_patrool_mark_list = {'ADAM', 'LINCOLN', 'MARY', 'HENRY', 'AIR', 'ASD', 'CHARLIE', 'ROBERT', 'SUPERVISOR', 'DAVID', 'EDWARD', 'NORA'}
 local ImItemsPatroolMark = imgui.new['const char*'][#combo_patrool_mark_list](combo_patrool_mark_list)
 local ComboPatroolCode = imgui.new.int(5)
-local combo_patrool_code_list = {'CODE 0', 'CODE 1', 'CODE 2', 'CODE 2 HIGHT', 'CODE 3', 'CODE 4', 'CODE 4 ADAM', 'CODE 5', 'CODE 6', 'CODE 7', 'CODE 30', 'CODE 30 RINGER', 'CODE 37', 'CODE TOM'}
+local combo_patrool_code_list = {'КОД 0', 'КОД 1', 'КОД 2', 'КОД 2 HIGHT', 'КОД 3', 'КОД 4', 'КОД 4 ADAM', 'КОД 5', 'КОД 6', 'КОД 7', 'КОД 30', 'КОД 30 RINGER', 'КОД 37', 'КОД TOM'}
 local ImItemsPatroolCode = imgui.new['const char*'][#combo_patrool_code_list](combo_patrool_code_list)
 
 local SumMenuWindow = imgui.new.bool()
@@ -1735,18 +1735,9 @@ function initialize_commands()
 			play_error_sound()
 		end
 	end)
-	sampRegisterChatCommand("awanted", function() 
-		if settings.general.auto_find_wanteds then
-			search_awanted = not search_awanted
-			awanted = search_awanted
-			sampAddChatMessage('[Vanguard Helper - AWANTED] {ffffff}Функция ' .. (search_awanted and "включена! Если возле вас будет игрок с розыском - вы получите оповещение." or "отключена!"), message_color)
-		else
-			sampAddChatMessage('[Vanguard Helper] {ffffff}Сначало включите функцию AWANTED в настройках Ассистента!', message_color)
-		end
-	end)
 	sampRegisterChatCommand("wanted", function(arg)
 		sampSendChat('/wanted ' .. arg)
-		sampAddChatMessage('[Vanguard Helper] {ffffff}Лучше используйте /wanteds для автосканирования всего вантеда!', message_color)
+		--sampAddChatMessage('[Vanguard Helper] {ffffff}Лучше используйте /wanteds для автосканирования всего вантеда!', message_color)
 	end)
 	sampRegisterChatCommand("meg", function ()
 		MegafonWindow[0] = not MegafonWindow[0]
@@ -2645,20 +2636,20 @@ function sampev.onSendTakeDamage(playerId,damage,weapon)
 				sampAddChatMessage('[Vanguard Helper] {ffffff}Игрок ' .. sampGetPlayerNickname(playerId) .. '[' .. playerId .. '] напал на вас используя ' .. weapon_name .. '['.. weapon .. ']!', message_color)
 				--sampSendChat(' /rep Следите за ID ' .. playerId ..', напал на меня используя ' .. weapon_name)
 				if ComboPatroolCode[0] ~= 1 then
-					sampAddChatMessage('[Vanguard Helper - Ассистент] {ffffff}Ваш ситуационный код изменён на CODE 0.', message_color)
+					sampAddChatMessage('[Vanguard Helper - Ассистент] {ffffff}Ваш ситуационный код изменён на КОД 0.', message_color)
 					ComboPatroolCode[0] = 1
 					patrool_code = combo_patrool_code_list[ComboPatroolCode[0] + 1]
 				end
 				if settings.general.auto_doklad_damage then
 					if weapon ~= 0 then
 						lua_thread.create(function ()
-							sampSendChat('/r ' .. tagReplacements.my_doklad_nick() .. ' - ДИСПЕТЧЕР. Нахожусь под огнём в районе ' .. tagReplacements.get_area() ..  ' (' .. tagReplacements.get_square() .. '), состояние CODE 0! ')
+							sampSendChat('/r ' .. tagReplacements.my_doklad_nick() .. ' - ДИСПЕТЧЕР. Нахожусь под огнём в районе ' .. tagReplacements.get_area() ..  ' (' .. tagReplacements.get_square() .. '), состояние КОД 0! ')
 							wait(2100)
 							sampSendChat('/rb Нападающий: ' .. sampGetPlayerNickname(playerId) .. '[' .. playerId .. '], он(-а) использует ' .. weapon_name .. '!')
 						end)
 					else
 						lua_thread.create(function ()
-							sampSendChat('/r ' .. tagReplacements.my_doklad_nick() .. ' - ДИСПЕТЧЕР. На меня напали в районе ' .. tagReplacements.get_area() ..  ' (' .. tagReplacements.get_square() .. '), состояние CODE 0! ')
+							sampSendChat('/r ' .. tagReplacements.my_doklad_nick() .. ' - ДИСПЕТЧЕР. На меня напали в районе ' .. tagReplacements.get_area() ..  ' (' .. tagReplacements.get_square() .. '), состояние КОД 1! ')
 							wait(2100)
 							sampSendChat('/rb Нападающий: ' .. sampGetPlayerNickname(playerId) .. '[' .. playerId .. '], он(-а) использует ' .. weapon_name .. '!')
 						end)
@@ -3525,11 +3516,11 @@ imgui.OnFrame(
 							settings.general.auto_doklad_patrool = checkbox_patrool_autodoklad[0]
 							save_settings()
 						end
-						if imgui.Checkbox(u8(' [В патруле] Изменение ситуационного кода на CODE 3/4 при вкл/выкл мигалок'), checkbox_change_code_siren) then
+						if imgui.Checkbox(u8(' [В патруле] Изменение ситуационного кода на КОД 3/4 при вкл/выкл мигалок'), checkbox_change_code_siren) then
 							settings.general.auto_change_code_siren = checkbox_change_code_siren[0]
 							save_settings()
 						end
-						if imgui.Checkbox(u8(' [При получении урона] Доклад в рацию про CODE 0 и указание ника в нрп рацию'), checkbox_autodoklad_damage) then
+						if imgui.Checkbox(u8(' [При получении урона] Доклад в рацию про КОД 0 и указание ника в нрп рацию'), checkbox_autodoklad_damage) then
 							settings.general.auto_doklad_damage = checkbox_autodoklad_damage[0]
 							save_settings()
 						end
@@ -3545,28 +3536,8 @@ imgui.OnFrame(
 							settings.general.auto_time = checkbox_auto_time[0]
 							save_settings()
 						end	
-						if imgui.Checkbox(u8(' [Расследования] Заполнение всех нужных данных в диалогах'), checkbox_autodocumentation) then
-							settings.general.auto_documentation = checkbox_autodocumentation[0]
-							save_settings()
-						end
-						if imgui.Checkbox(u8(' [Меню /wanteds] Обновление списка преступников каждые 10 секунд'), checkbox_update_wanteds) then
-							settings.general.auto_update_wanteds = checkbox_update_wanteds[0]
-							save_settings()
-						end
-						if imgui.Checkbox(u8(' [Меню /mb] Обновление списка сотрудников каждые 3 секунды'), checkbox_update_members) then
-							settings.general.auto_update_members = checkbox_update_members[0]
-							save_settings()
-						end
 						if imgui.Checkbox(u8(' [При слете маски с лица] Моментальное надевание новой маски'), checkbox_automask) then
 							settings.general.auto_mask = checkbox_automask[0]
-							save_settings()
-						end
-						if imgui.Checkbox(u8(' [Случайные Ситуации] Автокликер на сбор камней (') .. fa.TRIANGLE_EXCLAMATION .. u8(' может быть запрещено!)'), checkbox_auto_clicker) then
-							settings.general.auto_clicker_situation = checkbox_auto_clicker[0]
-							save_settings()
-						end
-						if imgui.Checkbox(u8(' [AWANTED] Оповещение если преступник в зоне прорисовки (') .. fa.TRIANGLE_EXCLAMATION .. u8(' может быть запрещено!)'), checkbox_awanted) then
-							settings.general.auto_find_wanteds = checkbox_awanted[0]
 							save_settings()
 						end
 						imgui.EndChild()
@@ -5265,7 +5236,7 @@ imgui.OnFrame(
 			imgui.PushItemWidth(579 * settings.general.custom_dpi)
 			imgui.InputText("##input_cmd", input_cmd, 256)
 			imgui.Separator()
-			imgui.CenterText(fa.CODE .. u8' Аргументы которые принимает команда:')
+			imgui.CenterText(fa.КОД .. u8' Аргументы которые принимает команда:')
 	    	imgui.Combo(u8'',ComboTags, ImItems, #item_list)
 	 	    imgui.Separator()
 	        imgui.CenterText(fa.FILE_WORD .. u8' Текстовый бинд команды:')
@@ -6918,11 +6889,11 @@ function main()
 			if currentSirenState ~= lastSirenState then
 				lastSirenState = currentSirenState
 				if currentSirenState then
-					sampAddChatMessage("[Vanguard Helper - Ассистент] {ffffff}В вашем т/с была включена сирена, изменяю ситуационный код на CODE 3!", message_color)
+					sampAddChatMessage("[Vanguard Helper - Ассистент] {ffffff}В вашем т/с была включена сирена, изменяю ситуационный код на КОД 3!", message_color)
 					ComboPatroolCode[0] = 4
 					patrool_code = combo_patrool_code_list[ComboPatroolCode[0] + 1]
 				else
-					sampAddChatMessage("[Vanguard Helper - Ассистент] {ffffff}В вашем т/с была отключена сирена, изменяю ситуационный код на CODE 4.", message_color)
+					sampAddChatMessage("[Vanguard Helper - Ассистент] {ffffff}В вашем т/с была отключена сирена, изменяю ситуационный код на КОД 4.", message_color)
 					ComboPatroolCode[0] = 5
 					patrool_code = combo_patrool_code_list[ComboPatroolCode[0] + 1]
 				end
