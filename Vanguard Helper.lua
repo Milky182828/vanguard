@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("0.5 alpha")
+script_version("0.6 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
