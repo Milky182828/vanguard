@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.1 alpha")
+script_version("1.2 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -6268,7 +6268,7 @@ imgui.OnFrame(
 									imgui.SameLine()
 									if imgui.Button(fa.TICKET .. u8' Выписать штраф', imgui.ImVec2(200 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 										TsmMenuWindow[0] = false
-										find_and_use_command('/writeticket {arg_id}', player_id .. ' ' .. item.amount .. ' ' .. item.reason)
+										find_and_use_command('/ticket {arg_id}', player_id .. ' ' .. item.amount .. ' ' .. item.reason)
 										imgui.CloseCurrentPopup()
 									end
 									imgui.EndPopup()
