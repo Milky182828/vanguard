@@ -2732,14 +2732,14 @@ function sampev.onServerMessage(color,text)
 	if tonumber(settings.player_info.fraction_rank_number) >= 5 then
 		if text:find("%[(.-)%] (.-) (.-)%[(.-)%]: (.+)") and color == 766526463 then -- /f /fb или /r /rb без тэга 
 			local tag, rank, name, playerID, message = string.match(text, "%[(.-)%] (.+) (.-)%[(.-)%]: (.+)")
-			if message:find('Прошу обьявить в розыск (%d) степени дело N(%d+)%. Причина%: (.+)') then
-				local lvl, id, reason = message:match('Прошу обьявить в розыск (%d) степени дело N(%d+)%. Причина%: (.+)')
+			if message:find('Прошу обьявить в розыск (%d) степени дело (%d+)%. Причина% (.+)') then
+				local lvl, id, reason = message:match('Прошу обьявить в розыск (%d) степени дело (%d+)%. Причина% (.+)')
 				form_su = id .. ' ' .. lvl .. ' ' .. reason
 				sampAddChatMessage('[Vanguard Helper] {ffffff}Используйте /givefsu ' .. playerID .. ' чтобы выдать розыск по запросу офицера ' .. name, message_color)
 			end
 		elseif text:find("%[(.-)%] %[(.-)%] (.+) (.-)%[(.-)%]: (.+)") and color == 766526463 then -- /r или /f с тэгом
 			local tag, tag2, rank, name, playerID, message = string.match(text, "%[(.-)%] %[(.-)%] (.+) (.-)%[(.-)%]: (.+)")
-			local lvl, id, reason = message:match('Прошу обьявить в розыск (%d) степени дело N(%d+)%. Причина%: (.+)')
+			local lvl, id, reason = message:match('Прошу обьявить в розыск (%d) степени дело (%d+)%. Причина% (.+)')
 				form_su = id .. ' ' .. lvl .. ' ' .. reason
 				sampAddChatMessage('[Vanguard Helper] {ffffff}Используйте /givefsu ' .. playerID .. ' чтобы выдать розыск по запросу офицера ' .. name, message_color)
 		end
@@ -6198,7 +6198,7 @@ imgui.OnFrame(
 									imgui.SameLine()
 									if imgui.Button(fa.STAR .. u8' Запросить розыск', imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 										SumMenuWindow[0] = false
-										find_and_use_command('Прошу обьявить в розыск %{arg2%} степени дело N%{arg_id%}%. Причина%: %{arg3%}', player_id .. ' ' .. item.lvl .. ' ' .. item.reason)
+										find_and_use_command('Прошу обьявить в розыск %{arg2%} степени дело %{arg_id%}%. Причина% %{arg3%}', player_id .. ' ' .. item.lvl .. ' ' .. item.reason)
 										imgui.CloseCurrentPopup()
 									end
 									imgui.SameLine()
