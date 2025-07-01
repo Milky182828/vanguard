@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.2 alpha")
+script_version("1.3.4 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -6202,7 +6202,7 @@ imgui.OnFrame(
 										imgui.CloseCurrentPopup()
 									end
 									imgui.SameLine()
-									local text_rank = ((settings.general.fraction == 'ФСБ' or settings.general.fraction == 'FBI') and ' [4+]' or ' [5+]')
+									local text_rank = ((settings.general.fraction == 'ФСБ' or settings.general.fraction == 'FBI') and ' [3+]' or ' [3+]')
 									if imgui.Button(fa.STAR .. u8' Выдать розыск' .. text_rank, imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 										SumMenuWindow[0] = false
 										find_and_use_command('/su {arg_id} {arg2} {arg3}', player_id .. ' ' .. item.lvl .. ' ' .. item.reason)
