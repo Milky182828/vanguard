@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.4 alpha")
+script_version("1.3.5 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -24,10 +24,10 @@ local default_settings = {
 		auto_mask = true,
 		rp_chat = true,
         rp_gun = true,
-		auto_doklad_patrool = true,
-		auto_doklad_damage = true,
+		auto_doklad_patrool = false,
+		auto_doklad_damage = false,
 		auto_doklad_arrest = true,
-		auto_change_code_siren = true,
+		auto_change_code_siren = false,
 		auto_update_wanteds = false,
 		auto_find_wanteds = false,
 		auto_update_members = false,
@@ -1423,6 +1423,97 @@ local afind = false
 local InfraredVision = false
 local NightVision = false
 
+--
+--
+--
+-- Функция проверки маски по цвету ника
+local function isPlayerMasked()
+    if not sampIsLocalPlayerSpawned() then
+        return false
+    end
+    
+    local playerId = select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))
+    if playerId ~= -1 then
+        local success, nickColor = pcall(sampGetPlayerColor, playerId)
+        return success and nickColor == 23486046
+    end
+    return false
+end
+
+local wasMasked = false
+local lastMaskCheck = 0
+local maskCheckDelay = 3000
+
+-- Функция для обновления состояния маски (вызывайте ее там, где нужно проверить маску)
+function updateMaskState()
+    local currentTime = os.clock() * 1000
+    if currentTime - lastMaskCheck >= maskCheckDelay then
+        wasMasked = isPlayerMasked()
+        lastMaskCheck = currentTime
+    end
+    return wasMasked
+end
+
+-- Модифицированная функция executeMaskCommand
+local function executeMaskCommand(isAuto)
+    if isActiveCommand then return end
+    
+    isActiveCommand = true
+    
+    -- Пропускаем сообщение о начале отыгровки для автоматического надевания
+    if not isAuto then
+        if isMonetLoader() and settings.general.mobile_stop_button then
+            sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте '..message_color_hex..'/stop {ffffff}или нажмите кнопку внизу экрана', message_color)
+            CommandStopWindow[0] = true
+        elseif not isMonetLoader() and hotkey_no_errors and settings.general.bind_command_stop and settings.general.use_binds then
+            sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте '..message_color_hex..'/stop {ffffff}или нажмите '..message_color_hex..getNameKeysFrom(settings.general.bind_command_stop), message_color)
+        else
+            sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте '..message_color_hex..'/stop', message_color)
+        end
+    end
+    
+    -- Всегда выполняем отыгровку НАДЕВАНИЯ маски при авто-надевании
+    if isAuto or not isPlayerMasked() then
+        lua_thread.create(function()
+            if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/me достаёт балаклаву и натягивает её себе на голову') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/mask') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
+            
+            -- Обновляем статус маски
+            wait(5000)
+            wasMasked = updateMaskState()
+            if wasMasked then
+                sampAddChatMessage('[Vanguard Helper] {ffffff}Маска успешно надета!', message_color)
+            end
+            
+            isActiveCommand = false
+        end)
+    else
+        lua_thread.create(function()
+            if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/me стягивает балаклаву с головы и прицепляет её к тактическому поясу') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/mask') end
+            wait(3100)
+            if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
+            
+            -- Обновляем статус маски
+            wait(5000)
+            wasMasked = updateMaskState()
+            if not wasMasked then
+                sampAddChatMessage('[Vanguard Helper] {ffffff}Маска успешно снята!', message_color)
+            end
+            
+            isActiveCommand = false
+        end)
+    end
+end
+
 ------------------------------------------- Main -----------------------------------------------------
 function welcome_message()
 	if not sampIsLocalPlayerSpawned() then 
@@ -1797,41 +1888,12 @@ function initialize_commands()
 			play_error_sound()
 		end
 	end)
-	sampRegisterChatCommand("debug", function() debug_mode = not debug_mode sampAddChatMessage('[JH DEBUG] {ffffff}Отслеживание команд ' .. (debug_mode and 'включено!' or 'выключено!'), message_color) end)
-	sampRegisterChatCommand("mask", function() 
+	sampRegisterChatCommand("debug", function() debug_mode = not debug_mode sampAddChatMessage('[MILKY DEBUG] {ffffff}Отслеживание команд ' .. (debug_mode and 'включено!' or 'выключено!'), message_color) end)
+
+	-- Регистрируем команду /mask
+	sampRegisterChatCommand("mask", function()
 		if not isActiveCommand then
-			isActiveCommand = true
-			if isMonetLoader() and settings.general.mobile_stop_button then
-				sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите кнопку внизу экрана', message_color)
-				CommandStopWindow[0] = true
-			elseif not isMonetLoader() and hotkey_no_errors and settings.general.bind_command_stop and settings.general.use_binds then
-				sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop {ffffff}или нажмите ' .. message_color_hex .. getNameKeysFrom(settings.general.bind_command_stop), message_color)
-			else
-				sampAddChatMessage('[Vanguard Helper] {ffffff}Чтобы остановить отыгровку команды используйте ' .. message_color_hex .. '/stop', message_color)
-			end
-			if sampGetPlayerColor(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))) == 23486046 then
-				lua_thread.create(function()
-					if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/me стягивает балаклаву с головы и прицепляет её к тактичекому поясу') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/mask') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
-					isActiveCommand = false
-				end)
-			else
-				lua_thread.create(function()
-					if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/me достаёт балаклаву и натягивает её себе на голову') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/mask') end
-					wait(3100)
-					if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
-					isActiveCommand = false
-				end)
-			end
+			executeMaskCommand()
 		else
 			sampAddChatMessage('[Vanguard Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
 			play_error_sound()
@@ -2756,16 +2818,48 @@ function sampev.onServerMessage(color,text)
 		return false
 	end
 	if (settings.general.auto_mask) then
-		if text:find('Время действия маски истекло, вам пришлось ее выбросить.') then
-			sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски истекло, автоматически надеваю новую', message_color)
-			sampSendChat("/mask")
+		-- Проверка по цвету ника (выполняется периодически)
+		local currentTime = os.clock() * 1000
+		if currentTime - lastMaskCheck >= maskCheckDelay then
+			lastMaskCheck = currentTime
+			
+			local isMaskedNow = updateMaskState()
+			
+			-- Обработка автоматического надевания при слете маски
+			if not isMaskedNow and wasMasked then
+				sampAddChatMessage('[Vanguard Helper] {ffffff}Обнаружен сброс маски!', message_color)
+				executeMaskCommand(true)  -- true - флаг автоматического выполнения
+			end
+			
+			wasMasked = isMaskedNow
+		end
+		
+		-- Обработка серверных сообщений
+		if text:find('Время действия маски истекло, Вам пришлось её выбросить') or 
+		   text:find('Время действия маски истекло, вам пришлось ее выбросить%.') then
+			-- Проверяем, действительно ли маска слетела
+			wait(500) -- небольшая задержка для обновления состояния
+			if not isPlayerMasked() then
+				sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски истекло, автоматически надеваю новую', message_color)
+				executeMaskCommand(true)
+			end
 			return false
-		elseif (text:find('Время действия маски (%d+) минут, после исхода времени ее придётся выбросить.')) then
-			local min = text:match('Время действия маски (%d+) минут, после исхода времени ее придётся выбросить.')
-			sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски ' .. min .. ' минут, после исхода времени автоматически надеву новую!', message_color)
+		elseif text:find('Вы надели маску') or text:find('Вы надели маску%.') then
+			local min = text:match('Время действия маски (%d+) минут')
+			if min then
+				sampAddChatMessage('[Vanguard Helper] {ffffff}Маска надета! Время действия: '..min..' минут', message_color)
+			else
+				sampAddChatMessage('[Vanguard Helper] {ffffff}Маска успешно надета!', message_color)
+			end
+			wasMasked = true -- Обновляем статус маски
+			return false
+		elseif text:find('Время действия маски (%d+) минут, после исхода времени ее придётся выбросить%.') then
+			local min = text:match('Время действия маски (%d+) минут, после исхода времени ее придётся выбросить%.')
+			sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски '..min..' минут, после исхода времени автоматически надену новую!', message_color)
+			wasMasked = true -- Обновляем статус маски
 			return false
 		end
-	end 
+	end
 	if text:find("1%.{6495ED} 111 %- {FFFFFF}Проверить баланс телефона") or
 		text:find("2%.{6495ED} 060 %- {FFFFFF}Служба точного времени") or
 		text:find("3%.{6495ED} 911 %- {FFFFFF}Полицейский участок") or
@@ -2794,7 +2888,7 @@ function sampev.onServerMessage(color,text)
 		printStringNow('AUTO FIND', 500)
 		return false
 	end
-	if text:find("Вы успешно надели маску") then
+	if text:find("Вы надели маску") then
 		maska = true
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Вы надели маску', message_color)
 		return false
@@ -2874,7 +2968,7 @@ function sampev.onServerMessage(color,text)
 end
 function sampev.onSendChat(text)
 	if debug_mode then
-		sampAddChatMessage('[JH DEBUG] {ffffff}' .. text, message_color)
+		sampAddChatMessage('[MILKY DEBUG] {ffffff}' .. text, message_color)
 	end
 	local ignore = {
 		[";)"] = true,
@@ -2918,7 +3012,7 @@ function sampev.onSendChat(text)
 end
 function sampev.onSendCommand(text)
 	if debug_mode then
-		sampAddChatMessage('[JH DEBUG] {ffffff}' .. text, message_color)
+		sampAddChatMessage('[MILKY DEBUG] {ffffff}' .. text, message_color)
 	end
 	if settings.general.rp_chat then
 		local chats =  { '/vr', '/fam', '/al', '/s', '/b', '/n', '/r', '/rb', '/f', '/fb', '/j', '/jb', '/m', '/do'} 
@@ -4759,19 +4853,19 @@ imgui.OnFrame(
 				imgui.BeginChild('##1', imgui.ImVec2(589 * settings.general.custom_dpi, 145 * settings.general.custom_dpi), true)
 				imgui.CenterText(fa.CIRCLE_INFO .. u8' Дополнительная информация про хелпер')
 				imgui.Separator()
-				imgui.Text(fa.CIRCLE_USER..u8" Разработчик данного хелпера: Milky")
+				imgui.Text(fa.CIRCLE_USER..u8" Разработчик данного хелпера: Robert_Wagner (Milky)")
 				imgui.Separator()
 				imgui.Text(fa.CIRCLE_INFO..u8" Установленная версия хелпера: " .. u8(thisScript().version))
 				imgui.Separator()
-				imgui.Text(fa.CIRCLE_USER..u8"  Wagner | Greys")
-				-- imgui.SameLine()
-				-- if imgui.SmallButton(u8'Проверить обновления') then
-				-- 	if string.rupper(settings.general.version):find('VIP') then
-				-- 		sampAddChatMessage('[Vanguard Helper] {ffffff}Проверка и установка обновлений недоступна в VIP версии!', message_color)
-				-- 	else
-				-- 		check_update()
-				-- 	end
-				-- end
+				imgui.Text(fa.CIRCLE_USER..u8"  Wagner | Greys ")
+				imgui.SameLine()
+				if imgui.SmallButton(u8'Проверить обновления') then
+				 	if string.rupper(settings.general.version):find('VIP') then
+				 		sampAddChatMessage('[Vanguard Helper] {ffffff}Проверка и установка обновлений недоступна!', message_color)
+				 	else
+				 		check_update()
+				 	end
+				end
 				imgui.Separator()
 				imgui.EndChild()
 				imgui.BeginChild('##3', imgui.ImVec2(589 * settings.general.custom_dpi, 87 * settings.general.custom_dpi), true)
@@ -5830,22 +5924,35 @@ end
 imgui.OnFrame(
     function() return InformationWindow[0] end,
     function(player)
-		imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.info_menu.x, settings.windows_pos.info_menu.y), imgui.Cond.FirstUseEver)
-		imgui.SetNextWindowSize(imgui.ImVec2(225 * settings.general.custom_dpi, 113 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
-		imgui.Begin(fa.BUILDING_SHIELD .. u8" Vanguard Helper##info_menu", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar  )
-		if not isMonetLoader() and not sampIsChatInputActive() then player.HideCursor = true else player.HideCursor = false end
-		change_dpi()
-		imgui.Text(fa.CITY .. u8(' Город: ') .. u8(tagReplacements.get_city()))
-		imgui.Text(fa.MAP_LOCATION_DOT .. u8(' Район: ') .. u8(tagReplacements.get_area()))
-		imgui.Text(fa.LOCATION_CROSSHAIRS .. u8(' Квадрат: ') .. u8(tagReplacements.get_square()))
-		imgui.Separator()
-		imgui.Text(fa.CLOCK .. u8(' Текущее время: ') .. u8(tagReplacements.get_time()))
+        imgui.SetNextWindowPos(imgui.ImVec2(settings.windows_pos.info_menu.x, settings.windows_pos.info_menu.y), imgui.Cond.FirstUseEver)
+        imgui.SetNextWindowSize(imgui.ImVec2(225 * settings.general.custom_dpi, 133 * settings.general.custom_dpi), imgui.Cond.FirstUseEver)
+        imgui.Begin(fa.BUILDING_SHIELD .. u8" Vanguard Helper##info_menu", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
+        
+        if not isMonetLoader() and not sampIsChatInputActive() then 
+            player.HideCursor = true 
+        else 
+            player.HideCursor = false 
+        end
+        
+        change_dpi()
+        imgui.Text(fa.CITY .. u8(' Город: ') .. u8(tagReplacements.get_city()))
+        imgui.Text(fa.MAP_LOCATION_DOT .. u8(' Район: ') .. u8(tagReplacements.get_area()))
+        imgui.Text(fa.LOCATION_CROSSHAIRS .. u8(' Квадрат: ') .. u8(tagReplacements.get_square()))
+        imgui.Separator()
+        
+        -- Объединенное время и дата
+        local currentDate = os.date("%d.%m.%Y")
+        imgui.Text(fa.CLOCK .. u8(' ') .. u8(tagReplacements.get_time()) .. u8(" | ") .. currentDate)
+        
+        -- Строка статуса маски
+        imgui.Text(fa.MASK .. u8(' Маска: ') .. (updateMaskState() and u8('надета') or u8('не надета')))
+        
         local posX, posY = imgui.GetWindowPos().x, imgui.GetWindowPos().y
-		if posX ~= settings.windows_pos.info_menu.x or posY ~= settings.windows_pos.info_menu.y then
-			settings.windows_pos.info_menu = {x = posX, y = posY}
-			save_settings()
-		end
-		imgui.End()
+        if posX ~= settings.windows_pos.info_menu.x or posY ~= settings.windows_pos.info_menu.y then
+            settings.windows_pos.info_menu = {x = posX, y = posY}
+            save_settings()
+        end
+        imgui.End()
     end
 )
 
