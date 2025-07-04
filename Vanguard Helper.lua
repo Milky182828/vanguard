@@ -3,13 +3,17 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.5 alpha")
+script_version("1.3.6 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
 local u8 = require('encoding').UTF8
 local ffi = require('ffi')
 local sizeX, sizeY = getScreenResolution()
+local encoding = require('encoding')
+encoding.default = 'CP1251'
+u8 = encoding.UTF8
+
 
 print('[Vanguard Helper] Скрипт загружен. Версия: ' .. thisScript().version)
 -------------------------------------------- JSON SETTINGS ---------------------------------------------
@@ -1514,6 +1518,42 @@ local function executeMaskCommand(isAuto)
     end
 end
 
+--
+system_search_logs = {} -- Для системных розысков (без указания объявившего)
+player_search_logs = {} -- Для розысков, выданных игроками (с указанием объявившего)
+
+function addSearchLog(text)
+    -- Очищаем текст от цветовых кодов
+    local clean_text = text:gsub("{......}", "")
+    
+    -- Проверяем формат системного розыска (без указания объявившего)
+    if clean_text:find("Внимание! .+ был[а]? объявлен[а]? в розыск! Причина:") then
+        table.insert(system_search_logs, os.date("[%H:%M:%S] ") .. clean_text)
+        if #system_search_logs > 200 then table.remove(system_search_logs, 1) end
+    
+    -- Проверяем формат розыска, выданного игроком (есть "объявил:")
+    elseif clean_text:find("%[%d+%] был[а]? объявлен[а]? в розыск %(%d+ зв.%), объявил[а]?:") or
+           clean_text:find("был[а]? объявлен[а]? в розыск") then
+        table.insert(player_search_logs, os.date("[%H:%M:%S] ") .. clean_text)
+        if #player_search_logs > 200 then table.remove(player_search_logs, 1) end
+    end
+end
+
+function exportSearchLogs(log_table, filename)
+    if not log_table or #log_table == 0 then return end
+    
+    local file = io.open(getWorkingDirectory() .. "/Vanguard Helper/" .. filename, "w+")
+    if file then
+        file:write(u8"Лог розысков (экспорт " .. os.date("%d.%m.%Y %H:%M:%S") .. ")\n\n")
+        for i, log in ipairs(log_table) do
+            file:write(u8(log) .. "\n")
+        end
+        file:close()
+        sampAddChatMessage("[Vanguard Wanted] Лог экспортирован в " .. filename, -1)
+    else
+        sampAddChatMessage("[Vanguard Wanted] Ошибка экспорта лога", -1)
+    end
+end
 ------------------------------------------- Main -----------------------------------------------------
 function welcome_message()
 	if not sampIsLocalPlayerSpawned() then 
@@ -2669,21 +2709,21 @@ function count_lines_in_text(text, max_length)
 end
 local sampev = require('samp.events')
 function sampev.onShowTextDraw(id, data)
-	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~r~Sport!') then
+	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Стиль: ~r~Sport!') then
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Активирован режим езды Sport!', message_color)
 		return false
 	end
-	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~g~Comfort!') then
+	if data.text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Стиль: ~g~Comfort!') then
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Активирован режим езды Comfort!', message_color)
 		return false
 	end
 end
 function sampev.onDisplayGameText(style,time,text)
-	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~r~Sport!') then
+	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Стиль: ~r~Sport!') then
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Активирован режим езды Sport!', message_color)
 		return false
 	end
-	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Style: ~g~Comfort!') then
+	if text:find('~n~~n~~n~~n~~n~~n~~n~~n~~w~Стиль: ~g~Comfort!') then
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Активирован режим езды Comfort!', message_color)
 		return false
 	end
@@ -2908,6 +2948,7 @@ function sampev.onServerMessage(color,text)
 	end
 	if text:find('Вы посадили игрока (.+) в тюрьму на (%d+) минут') and settings.general.auto_doklad_arrest then
 		local nick, mins = text:match('Вы посадили игрока (.+) в тюрьму на (%d+) минут')
+		-- Не блокируем оригинальное сообщение, просто добавляем /r сообщение
 		sampSendChat('/r ' .. tagReplacements.my_doklad_nick() .. ' - ДИСПЕТЧЕР. Преступник ' .. nick:gsub('_', ' ') .. ' посажен в КПЗ на ' .. mins .. ' минут!')
 		if settings.general.auto_time then
 			lua_thread.create(function ()
@@ -2915,7 +2956,16 @@ function sampev.onServerMessage(color,text)
 				sampSendChat('/time')
 			end)
 		end
+		return false -- Это предотвратит скрытие оригинального сообщения
 	end
+	--
+	-- В функции обработки сообщений сервера/игроков
+	if text:find("Внимание! .+ был[а]? объявлен[а]? в розыск! Причина:") or 
+	   text:find("%[%d+%] был[а]? объявлен[а]? в розыск %(%d+ зв.%), объявил[а]?:") or
+	   text:find("был[а]? объявлен[а]? в розыск") then
+		addSearchLog(text)
+	end
+	--
 	if text:find('На этом автомобиле уже установлена маркировка.') and patrool_active then
 		sampSendChat('/delvdesc')
 		lua_thread.create(function ()
@@ -2949,19 +2999,19 @@ function sampev.onServerMessage(color,text)
 		if text:find('%[01%]Robert_Wagner%[%d+%]') then
 			-- Случай 2: [01]Robert_Wagner[123]
 			local id = text:match('%[01%]Robert_Wagner%[(%d+)%]') or ''
-			text = string.gsub(text, '%[01%]Robert_Wagner%[%d+%]', message_color_hex .. '[01]Milky[' .. id .. ']' .. lastColor)
+			text = string.gsub(text, '%[01%]Robert_Wagner%[%d+%]', message_color_hex .. '[01]СОЗДАТЕЛЬ АВАНГАРДА[' .. id .. ']' .. lastColor)
 		
 		elseif text:find('%[01%]Robert_Wagner') then
 			-- Случай 1: [01]Robert_Wagner
-			text = string.gsub(text, '%[01%]Robert_Wagner', message_color_hex .. '[01]Milky' .. lastColor)
+			text = string.gsub(text, '%[01%]Robert_Wagner', message_color_hex .. '[01]СОЗДАТЕЛЬ АВАНГАРДА' .. lastColor)
 		
 		elseif text:find('Robert_Wagner%[%d+%]') then
 			-- Случай 3: Robert_Wagner[123]
 			local id = text:match('Robert_Wagner%[(%d+)%]') or ''
-			text = string.gsub(text, 'Robert_Wagner%[%d+%]', message_color_hex .. 'Milky[' .. id .. ']' .. lastColor)
+			text = string.gsub(text, 'Robert_Wagner%[%d+%]', message_color_hex .. 'СОЗДАТЕЛЬ АВАНГАРДА[' .. id .. ']' .. lastColor)
 		elseif text:find('Robert_Wagner') then
 			-- Случай 3: Robert_Wagner
-			text = string.gsub(text, 'Robert_Wagner', message_color_hex .. 'Milky' .. lastColor)
+			text = string.gsub(text, 'Robert_Wagner', message_color_hex .. 'СОЗДАТЕЛЬ АВАНГАРДА' .. lastColor)
 		end
 		return {color,text}
 	end
@@ -4847,6 +4897,73 @@ imgui.OnFrame(
 				-- 	end
 				-- 	imgui.End()
 				-- end
+				imgui.EndTabItem()
+			end
+			if imgui.BeginTabItem(fa.STAR..u8' Лог розыска') then 
+				if imgui.BeginTabBar('##search_log_tabs') then
+					-- Вкладка "Системный розыск"
+					if imgui.BeginTabItem(u8'Системный розыск') then
+						imgui.BeginChild('##system_search', imgui.ImVec2(0, 300 * settings.general.custom_dpi), true)
+						
+						--imgui.Text(u8"Системные розыски (уровень 1):")
+						--imgui.Separator()
+						
+						if #system_search_logs == 0 then
+							imgui.Text(u8"Лог пуст")
+						else
+							imgui.BeginChild('##system_logs', imgui.ImVec2(0, 250 * settings.general.custom_dpi), true, imgui.WindowFlags.HorizontalScrollbar)
+							for i, log in ipairs(system_search_logs) do
+								imgui.TextColored(imgui.ImVec4(1.0, 0.2, 0.2, 1.0), u8(log)) -- Красный цвет
+							end
+							imgui.EndChild()
+						end
+						
+						-- Кнопки управления
+						if imgui.Button(u8"Очистить лог", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+							system_search_logs = {}
+						end
+						imgui.SameLine()
+						if imgui.Button(u8"Экспорт в файл", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+							exportSearchLogs(system_search_logs, "system_wanted_log.txt")
+						end
+						
+						imgui.EndChild()
+						imgui.EndTabItem()
+					end
+					
+					-- Вкладка "Выданный игроками"
+					if imgui.BeginTabItem(u8'Выданный игроками') then
+						imgui.BeginChild('##player_search', imgui.ImVec2(0, 300 * settings.general.custom_dpi), true)
+						
+						--imgui.Text(u8"Розыски, выданные игроками (уровень 3):")
+						--imgui.Separator()
+						
+						if #player_search_logs == 0 then
+							imgui.Text(u8"Лог пуст")
+						else
+							imgui.BeginChild('##player_logs', imgui.ImVec2(0, 250 * settings.general.custom_dpi), true, imgui.WindowFlags.HorizontalScrollbar)
+							for i, log in ipairs(player_search_logs) do
+								imgui.TextColored(imgui.ImVec4(1.0, 0.5, 0.0, 1.0), u8(log)) -- Оранжевый цвет
+							end
+							imgui.EndChild()
+						end
+						
+						-- Кнопки управления
+						if imgui.Button(u8"Очистить лог", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+							player_search_logs = {}
+						end
+						imgui.SameLine()
+						if imgui.Button(u8"Экспорт в файл", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+							exportSearchLogs(player_search_logs, "player_wanted_log.txt")
+						end
+						
+						imgui.EndChild()
+						imgui.EndTabItem()
+					end
+					
+					imgui.EndTabBar()
+				end
+				
 				imgui.EndTabItem()
 			end
 			if imgui.BeginTabItem(fa.GEAR..u8' Настройки') then 
