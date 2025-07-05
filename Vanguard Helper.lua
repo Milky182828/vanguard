@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.7 alpha")
+script_version("1.3.8 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -1545,7 +1545,64 @@ end
 --
 system_search_logs = {} -- Для системных розысков (без указания объявившего)
 player_search_logs = {} -- Для розысков, выданных игроками (с указанием объявившего)
+local logs_folder = getWorkingDirectory() .. "/Vanguard Helper/Logs/"
 
+-- Создаем папку для логов, если ее нет
+local function ensureLogsDirectory()
+    if not doesDirectoryExist(logs_folder) then
+        createDirectory(logs_folder)
+    end
+end
+
+-- Загружаем логи из файлов при старте
+local function loadLogsFromFiles()
+    ensureLogsDirectory()
+    
+    -- Функция для загрузки конкретного файла логов
+    local function loadLogFile(filename, target_table)
+        local path = logs_folder .. filename
+        if doesFileExist(path) then
+            local file = io.open(path, "r")
+            if file then
+                for line in file:lines() do
+                    if line ~= "" then  -- Пропускаем пустые строки
+                        table.insert(target_table, line)
+                    end
+                end
+                file:close()
+                return true
+            end
+        end
+        return false
+    end
+    
+    -- Загружаем оба типа логов
+    loadLogFile("system_searches.txt", system_search_logs)
+    loadLogFile("player_searches.txt", player_search_logs)
+end
+
+-- Сохраняем логи в файлы
+local function saveLogsToFiles()
+    ensureLogsDirectory()
+    
+    -- Функция для сохранения конкретного лога
+    local function saveLogFile(filename, log_table)
+        local path = logs_folder .. filename
+        local file = io.open(path, "w")
+        if file then
+            for _, log in ipairs(log_table) do
+                file:write(log .. "\n")
+            end
+            file:close()
+        end
+    end
+    
+    -- Сохраняем оба типа логов
+    saveLogFile("system_searches.txt", system_search_logs)
+    saveLogFile("player_searches.txt", player_search_logs)
+end
+
+-- Добавляем запись в лог и сразу сохраняем в файл
 function addSearchLog(text)
     -- Очищаем текст от цветовых кодов
     local clean_text = text:gsub("{......}", "")
@@ -1561,16 +1618,21 @@ function addSearchLog(text)
         table.insert(player_search_logs, os.date("[%H:%M:%S] ") .. clean_text)
         if #player_search_logs > 200 then table.remove(player_search_logs, 1) end
     end
+    
+    -- Сохраняем изменения в файлы
+    saveLogsToFiles()
 end
 
+-- Функция экспорта (сохраняет в текстовый файл с красивым форматированием)
 function exportSearchLogs(log_table, filename)
     if not log_table or #log_table == 0 then return end
     
-    local file = io.open(getWorkingDirectory() .. "/Vanguard Helper/" .. filename, "w+")
+    ensureLogsDirectory()
+    local file = io.open(logs_folder .. filename, "w+")
     if file then
-        file:write(u8"Лог розысков (экспорт " .. os.date("%d.%m.%Y %H:%M:%S") .. ")\n\n")
+        file:write("Лог розысков (экспорт " .. os.date("%d.%m.%Y %H:%M:%S") .. ")\n\n")
         for i, log in ipairs(log_table) do
-            file:write(u8(log) .. "\n")
+            file:write(log .. "\n")
         end
         file:close()
         sampAddChatMessage("[Vanguard Wanted] Лог экспортирован в " .. filename, -1)
@@ -1578,6 +1640,8 @@ function exportSearchLogs(log_table, filename)
         sampAddChatMessage("[Vanguard Wanted] Ошибка экспорта лога", -1)
     end
 end
+-- Загружаем логи при инициализации скрипта
+loadLogsFromFiles()
 ------------------------------------------- Main -----------------------------------------------------
 function welcome_message()
 	if not sampIsLocalPlayerSpawned() then 
@@ -1586,6 +1650,7 @@ function welcome_message()
 		repeat wait(0) until sampIsLocalPlayerSpawned()
 	end
 	sampAddChatMessage('[Vanguard Helper] {ffffff}Загрузка хелпера прошла успешно!', message_color)
+	--loadLogsFromFiles()
 	print('[Vanguard Helper] Загрузка хелпера прошла успешно!')
 	show_arz_notify('info', 'Vanguard Helper', "Загрузка хелпера прошла успешно!", 3000)
 	if isMonetLoader() or settings.general.bind_mainmenu == nil or not settings.general.use_binds then	
@@ -4911,71 +4976,132 @@ imgui.OnFrame(
 				-- end
 				imgui.EndTabItem()
 			end
-			if imgui.BeginTabItem(fa.STAR..u8' Лог розыска') then 
+			if imgui.BeginTabItem(fa.STAR .. u8' Лог розыска') then
+				local system_search_buf = imgui.new.char[256]()
+				local player_search_buf = imgui.new.char[256]()
+				ffi.copy(system_search_buf, "")
+				ffi.copy(player_search_buf, "")
+
+				local function rus_lower(str)
+					local lower_map = {
+						['А'] = 'а', ['Б'] = 'б', ['В'] = 'в', ['Г'] = 'г', ['Д'] = 'д',
+						['Е'] = 'е', ['Ё'] = 'ё', ['Ж'] = 'ж', ['З'] = 'з', ['И'] = 'и',
+						['Й'] = 'й', ['К'] = 'к', ['Л'] = 'л', ['М'] = 'м', ['Н'] = 'н',
+						['О'] = 'о', ['П'] = 'п', ['Р'] = 'р', ['С'] = 'с', ['Т'] = 'т',
+						['У'] = 'у', ['Ф'] = 'ф', ['Х'] = 'х', ['Ц'] = 'ц', ['Ч'] = 'ч',
+						['Ш'] = 'ш', ['Щ'] = 'щ', ['Ъ'] = 'ъ', ['Ы'] = 'ы', ['Ь'] = 'ь',
+						['Э'] = 'э', ['Ю'] = 'ю', ['Я'] = 'я'
+					}
+					local result = {}
+					for uchar in str:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+						result[#result + 1] = lower_map[uchar] or uchar:lower()
+					end
+					return table.concat(result)
+				end
+
+				local function get_input(buf)
+					local ok, result = pcall(ffi.string, buf)
+					if ok and result then
+						return result
+					end
+					return ""
+				end
+
+				local function smart_find(haystack, needle)
+					if needle == "" then return true end
+					local haystack_lower = rus_lower(haystack)
+					local needle_lower = rus_lower(needle)
+					return haystack_lower:find(needle_lower, 1, true) ~= nil
+				end
+
 				if imgui.BeginTabBar('##search_log_tabs') then
-					-- Вкладка "Системный розыск"
 					if imgui.BeginTabItem(u8'Системный розыск') then
 						imgui.BeginChild('##system_search', imgui.ImVec2(0, 300 * settings.general.custom_dpi), true)
-						
-						--imgui.Text(u8"Системные розыски (уровень 1):")
-						--imgui.Separator()
-						
+						imgui.PushItemWidth(-1)
+						imgui.InputText('##system_search_input', system_search_buf, 256)
+						imgui.PopItemWidth()
+						imgui.SameLine()
+						if imgui.Button(fa.PEN_TO_SQUARE) then end
+						if imgui.IsItemHovered() then
+							imgui.SetTooltip(u8'Поиск по системным розыскам')
+						end
+						local raw_search_text = get_input(system_search_buf)
+						local search_text = u8:decode(raw_search_text)
+
 						if #system_search_logs == 0 then
 							imgui.Text(u8"Лог пуст")
 						else
 							imgui.BeginChild('##system_logs', imgui.ImVec2(0, 250 * settings.general.custom_dpi), true, imgui.WindowFlags.HorizontalScrollbar)
+							local found_count = 0
 							for i, log in ipairs(system_search_logs) do
-								imgui.TextColored(imgui.ImVec4(1.0, 0.2, 0.2, 1.0), u8(log)) -- Красный цвет
+								if search_text == "" or smart_find(log, search_text) then
+									imgui.TextColored(imgui.ImVec4(1.0, 0.2, 0.2, 1.0), u8(log))
+									found_count = found_count + 1
+								end
+							end
+							if search_text ~= "" and found_count == 0 then
+								imgui.Text(u8"Ничего не найдено")
 							end
 							imgui.EndChild()
 						end
-						
-						-- Кнопки управления
 						if imgui.Button(u8"Очистить лог", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							system_search_logs = {}
+							saveLogsToFiles()
 						end
 						imgui.SameLine()
 						if imgui.Button(u8"Экспорт в файл", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							exportSearchLogs(system_search_logs, "system_wanted_log.txt")
 						end
-						
 						imgui.EndChild()
 						imgui.EndTabItem()
 					end
-					
-					-- Вкладка "Выданный игроками"
+
 					if imgui.BeginTabItem(u8'Выданный игроками') then
 						imgui.BeginChild('##player_search', imgui.ImVec2(0, 300 * settings.general.custom_dpi), true)
-						
-						--imgui.Text(u8"Розыски, выданные игроками (уровень 3):")
-						--imgui.Separator()
-						
+						imgui.PushItemWidth(-1)
+						imgui.InputText('##player_search_input', player_search_buf, 256)
+						imgui.PopItemWidth()
+						imgui.SameLine()
+						if imgui.Button(fa.PEN_TO_SQUARE) then end
+						if imgui.IsItemHovered() then
+							imgui.SetTooltip(u8'Поиск по розыскам игроков')
+						end
+						local raw_search_text = get_input(player_search_buf)
+						local search_text = u8:decode(raw_search_text)
+
 						if #player_search_logs == 0 then
 							imgui.Text(u8"Лог пуст")
 						else
 							imgui.BeginChild('##player_logs', imgui.ImVec2(0, 250 * settings.general.custom_dpi), true, imgui.WindowFlags.HorizontalScrollbar)
+							local found_count = 0
 							for i, log in ipairs(player_search_logs) do
-								imgui.TextColored(imgui.ImVec4(1.0, 0.5, 0.0, 1.0), u8(log)) -- Оранжевый цвет
+								if search_text == "" or smart_find(log, search_text) then
+									imgui.TextColored(imgui.ImVec4(1.0, 0.5, 0.0, 1.0), u8(log))
+									found_count = found_count + 1
+								end
+							end
+							if search_text ~= "" and found_count == 0 then
+								imgui.Text(u8"Ничего не найдено")
 							end
 							imgui.EndChild()
 						end
-						
-						-- Кнопки управления
 						if imgui.Button(u8"Очистить лог", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							player_search_logs = {}
+							saveLogsToFiles()
 						end
 						imgui.SameLine()
 						if imgui.Button(u8"Экспорт в файл", imgui.ImVec2(150 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
 							exportSearchLogs(player_search_logs, "player_wanted_log.txt")
 						end
-						
 						imgui.EndChild()
 						imgui.EndTabItem()
 					end
-					
+
 					imgui.EndTabBar()
 				end
-				
+
+				ffi.gc(system_search_buf, nil)
+				ffi.gc(player_search_buf, nil)
 				imgui.EndTabItem()
 			end
 			if imgui.BeginTabItem(fa.GEAR..u8' Настройки') then 
