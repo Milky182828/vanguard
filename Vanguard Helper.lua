@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.6 alpha")
+script_version("1.3.7 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -1432,28 +1432,26 @@ local NightVision = false
 --
 -- Функция проверки маски по цвету ника
 local function isPlayerMasked()
-    if not sampIsLocalPlayerSpawned() then
-        return false
-    end
+    if not sampIsLocalPlayerSpawned() then return false end
     
-    local playerId = select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))
-    if playerId ~= -1 then
-        local success, nickColor = pcall(sampGetPlayerColor, playerId)
-        return success and nickColor == 23486046
-    end
-    return false
+    local _, playerId = sampGetPlayerIdByCharHandle(PLAYER_PED)
+    if playerId == nil or playerId == -1 then return false end
+    
+    local success, nickColor = pcall(sampGetPlayerColor, playerId)
+    if not success then return false end
+    
+    return nickColor == 23486046
 end
 
 local wasMasked = false
 local lastMaskCheck = 0
 local maskCheckDelay = 3000
 
--- Функция для обновления состояния маски (вызывайте ее там, где нужно проверить маску)
+-- Функция для обновления состояния маски
 function updateMaskState()
-    local currentTime = os.clock() * 1000
-    if currentTime - lastMaskCheck >= maskCheckDelay then
-        wasMasked = isPlayerMasked()
-        lastMaskCheck = currentTime
+    local currentMaskState = isPlayerMasked()
+    if currentMaskState ~= wasMasked then
+        wasMasked = currentMaskState
     end
     return wasMasked
 end
@@ -1479,38 +1477,64 @@ local function executeMaskCommand(isAuto)
     -- Всегда выполняем отыгровку НАДЕВАНИЯ маски при авто-надевании
     if isAuto or not isPlayerMasked() then
         lua_thread.create(function()
-            if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/me достаёт балаклаву и натягивает её себе на голову') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/mask') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
+            if not ifCommandPause() then 
+                sampSendChat('/do Балаклава прикреплена к тактическому поясу.') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/me достаёт балаклаву и натягивает её себе на голову') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/mask') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/do Балаклава на голове.') 
+                wait(5000)
+            end
             
             -- Обновляем статус маски
-            wait(5000)
-            wasMasked = updateMaskState()
+            wasMasked = isPlayerMasked()
             if wasMasked then
                 sampAddChatMessage('[Vanguard Helper] {ffffff}Маска успешно надета!', message_color)
+            else
+                sampAddChatMessage('[Vanguard Helper] {ff0000}Не удалось надеть маску!', message_color)
             end
             
             isActiveCommand = false
         end)
     else
         lua_thread.create(function()
-            if not ifCommandPause() then sampSendChat('/do Балаклава на голове.') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/me стягивает балаклаву с головы и прицепляет её к тактическому поясу') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/mask') end
-            wait(3100)
-            if not ifCommandPause() then sampSendChat('/do Балаклава прикреплена к тактическому поясу.') end
+            if not ifCommandPause() then 
+                sampSendChat('/do Балаклава на голове.') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/me стягивает балаклаву с головы и прицепляет её к тактическому поясу') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/mask') 
+                wait(3100)
+            end
+            
+            if not ifCommandPause() then 
+                sampSendChat('/do Балаклава прикреплена к тактическому поясу.') 
+                wait(5000)
+            end
             
             -- Обновляем статус маски
-            wait(5000)
-            wasMasked = updateMaskState()
+            wasMasked = isPlayerMasked()
             if not wasMasked then
                 sampAddChatMessage('[Vanguard Helper] {ffffff}Маска успешно снята!', message_color)
+            else
+                sampAddChatMessage('[Vanguard Helper] {ff0000}Не удалось снять маску!', message_color)
             end
             
             isActiveCommand = false
@@ -2857,13 +2881,14 @@ function sampev.onServerMessage(color,text)
 		sampAddChatMessage('[Vanguard Helper] {ffffff}У игрока ' .. nick .. ' нету трудовой книжки, выдайте её используя ' .. message_color_hex .. cmd .. ' ' .. sampGetPlayerIdByNickname(nick), message_color)
 		return false
 	end
+	-- Основной обработчик
 	if (settings.general.auto_mask) then
 		-- Проверка по цвету ника (выполняется периодически)
 		local currentTime = os.clock() * 1000
 		if currentTime - lastMaskCheck >= maskCheckDelay then
 			lastMaskCheck = currentTime
 			
-			local isMaskedNow = updateMaskState()
+			local isMaskedNow = isPlayerMasked()
 			
 			-- Обработка автоматического надевания при слете маски
 			if not isMaskedNow and wasMasked then
@@ -2877,12 +2902,13 @@ function sampev.onServerMessage(color,text)
 		-- Обработка серверных сообщений
 		if text:find('Время действия маски истекло, Вам пришлось её выбросить') or 
 		   text:find('Время действия маски истекло, вам пришлось ее выбросить%.') then
-			-- Проверяем, действительно ли маска слетела
-			wait(500) -- небольшая задержка для обновления состояния
-			if not isPlayerMasked() then
-				sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски истекло, автоматически надеваю новую', message_color)
-				executeMaskCommand(true)
-			end
+			-- Используем lua_thread.create для асинхронной проверки
+			lua_thread.create(function()
+				if not isPlayerMasked() then
+					sampAddChatMessage('[Vanguard Helper] {ffffff}Время действия маски истекло, автоматически надеваю новую', message_color)
+					executeMaskCommand(true)
+				end
+			end)
 			return false
 		elseif text:find('Вы надели маску') or text:find('Вы надели маску%.') then
 			local min = text:match('Время действия маски (%d+) минут')
@@ -2973,8 +2999,20 @@ function sampev.onServerMessage(color,text)
 			sampSendChat('/vdesc ' .. tagReplacements.get_patrool_mark())
 		end)		
 	end
-	if text:find('Вам поступило предложение от игрока (.+)%/offer') and settings.general.auto_accept_docs then
-		sampSendChat('/offer')
+	if text:find('%[Предложение%].+предлагает Вам просмотреть его') and settings.general.auto_accept_docs then
+		lua_thread.create(function()
+			wait(500) -- Небольшая задержка перед принятием
+			
+			-- Эмуляция нажатия Y (правильный способ)
+			local key = 0x59 -- Код клавиши Y
+			setVirtualKeyDown(key, true) -- Нажать клавишу
+			wait(100)
+			setVirtualKeyDown(key, false) -- Отпустить клавишу
+			
+			sampAddChatMessage('[Vanguard Docs] {ffffff}Принял предложение (нажал Y)', -1)
+			wait(2000) -- Ждём, пока документ откроется
+			sampSendChat('/me берёт документ из рук владельца и внимательно осматривает, после возвращает владельцу')
+		end)
 	end
 	if text:find(tagReplacements.my_nick() .. ' обыскивает (.+)') and settings.general.auto_time then
 		lua_thread.create(function ()
@@ -3282,32 +3320,6 @@ function sampev.onShowDialog(dialogid, style, title, button1, button2, text)
 			sampSendDialogResponse(dialogid, 1, 0, data)
 			sampAddChatMessage('[Vanguard Helper - Ассистент] {ffffff}Автозаполнение данных: ' .. data , message_color)
 		end
-		return false
-	end
-
-	if ((title:find('Активные предложения') and settings.general.auto_accept_docs) and (text:find('посмотреть его паспорт') or text:find('посмотреть его лицензии') or text:find('посмотреть его мед(.+)карту'))) then
-		if text:find('Когда') then
-			sampSendDialogResponse(dialogid, 1, 0, 0)
-			return false
-		end
-		if text:find('Принять предложение') and not text:find('Когда') then
-			local doc_type = 'документ'
-			if text:find('паспорт') then
-				doc_type = 'паспорт'
-			elseif text:find('мед(.+)карту') then
-				doc_type = 'мед.карту'
-			elseif text:find('лицензии') then
-				doc_type = 'лицензии'
-			end
-			sampSendChat('/me берёт ' .. doc_type .. ' и внимательно осматривает, затем возвращает обратно владельцу')
-			sampSendDialogResponse(dialogid, 1, 2, '')
-			sampAddChatMessage('[Vanguard Helper] {ffffff}Ожидайте 7 секунд для подтверждения принятия предложения...', -1)
-			return false
-		end
-	end
-
-	if (title:find('Подтверждение действия') and (text:find('посмотреть его паспорт') or text:find('посмотреть его лицензии') or text:find('посмотреть его мед(.+)карту'))) then
-		sampSendDialogResponse(dialogid, 1, 2, '')
 		return false
 	end
 
@@ -3668,7 +3680,7 @@ imgui.OnFrame(
 							settings.general.auto_doklad_damage = checkbox_autodoklad_damage[0]
 							save_settings()
 						end
-						if imgui.Checkbox(u8(' [Проверка документов] Принятие паспорта/мед.карты/лицензий из /offer с рп отыгровкой'), checkbox_auto_accept_docs) then
+						if imgui.Checkbox(u8(' [Проверка документов] Принятие паспорта/мед.карты/лицензий с рп отыгровкой'), checkbox_auto_accept_docs) then
 							settings.general.auto_accept_docs = checkbox_auto_accept_docs[0]
 							save_settings()
 						end	
