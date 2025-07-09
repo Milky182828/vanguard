@@ -3,7 +3,7 @@
 script_name("Vanguard Helper")
 script_description('This is a Lua script helper for Rodina RP players who work in the MVD')
 script_author("Milky")
-script_version("1.3.8 alpha")
+script_version("1.4 alpha")
 
 require('lib.moonloader')
 require('encoding').default = 'CP1251'
@@ -1004,6 +1004,8 @@ local GiveRankMenu = imgui.new.bool()
 local giverank = imgui.new.int(5)
 
 local SobesMenu = imgui.new.bool()
+local DoprosMenu = imgui.new.bool()
+local DemoteMenu = imgui.new.bool()
 
 local FastPieMenu = imgui.new.bool()
 
@@ -1923,6 +1925,20 @@ function initialize_commands()
 			play_error_sound()
 		end
 	end)
+	sampRegisterChatCommand("dopros", function(arg)
+		if not isActiveCommand then
+			if isParamSampID(arg) then
+				player_id = tonumber(arg)
+				DoprosMenu[0] = not DoprosMenu[0]
+			else
+				sampAddChatMessage('[Vanguard Helper] {ffffff}Используйте ' .. message_color_hex .. '/dopros [ID игрока]', message_color)
+				play_error_sound()
+			end	
+		else
+			sampAddChatMessage('[Vanguard Helper] {ffffff}Дождитесь завершения отыгровки предыдущей команды!', message_color)
+			play_error_sound()
+		end
+	end)
 	sampRegisterChatCommand("pnv", function(arg)
 		if not isActiveCommand then
 			NightVision = not NightVision
@@ -2458,7 +2474,7 @@ function getNameOfARZVehicleModel(id)
 	if need_download_arzveh then
 		sampAddChatMessage('[Vanguard Helper] {ffffff}Пытаюсь скачать файл VehiclesRodina.json в папку ' .. path_arzvehicles, message_color)
 		download_arzvehicles = true
-		downloadFileFromUrlToPath('https://github.com/Milky182828/vanguard/raw/refs/heads/main/VehiclesRodina/VehiclesRodina.json', path_arzvehicles)
+		downloadFileFromUrlToPath('https://vanguard-helper.ru/files/VehiclesRodina/VehiclesRodina.json', path_arzvehicles)
 		return ' транспортного средства'
 	end
 end
@@ -2550,7 +2566,7 @@ function check_update()
 	sampAddChatMessage('[Vanguard Helper] {ffffff}Начинаю проверку на наличие обновлений...', message_color)
 	local path = configDirectory .. "/Update_Info.json"
 	os.remove(path)
-	local url = 'https://github.com/Milky182828/vanguard/raw/refs/heads/main/Update_Info.json'
+	local url = 'https://vanguard-helper.ru/files/Update_Info.json'
 	if isMonetLoader() then
 		downloadToFile(url, path, function(type, pos, total_size)
 			if type == "finished" then
@@ -2607,14 +2623,26 @@ function check_update()
 			print("[Vanguard Helper] Ошибка: Файл " .. filePath .. " не существует")
 			return nil
 		end
+
 		local file = io.open(filePath, "r")
 		local content = file:read("*a")
 		file:close()
+
+		-- Подключаем библиотеку кодировок
+		local encoding = require("encoding")
+		encoding.default = "CP1251" -- ожидаем, что сервер прислал CP1251 (ANSI)
+		u8 = encoding.UTF8
+
+		-- Перекодируем в UTF-8 для правильного отображения
+		content = u8:decode(content)
+
+		-- Парсим JSON
 		local jsonData = decodeJson(content)
 		if not jsonData then
 			print("[Vanguard Helper] Ошибка: Неверный формат JSON в файле " .. filePath)
 			return nil
 		end
+
 		return jsonData
 	end
 end
@@ -3946,6 +3974,12 @@ imgui.OnFrame(
 							imgui.Columns(1)
 							imgui.Separator()
 							imgui.Columns(2)
+							imgui.CenterColumnText(u8"/dopros")
+							imgui.NextColumn()
+							imgui.CenterColumnText(u8"Меню проведения опроса (ФСБ)")
+							imgui.Columns(1)
+							imgui.Separator()
+							imgui.Columns(2)
 							imgui.CenterColumnText(u8"/sum")
 							imgui.NextColumn()
 							imgui.CenterColumnText(u8"Меню умной выдачи розыска")
@@ -4415,7 +4449,7 @@ imgui.OnFrame(
 					imgui.SetCursorPosX(105 * settings.general.custom_dpi)
 					if imgui.Button(fa.DOWNLOAD .. u8' Загрузить ##smartuk') then
 						download_smartuk = true
-						downloadFileFromUrlToPath('https://github.com/Milky182828/vanguard/raw/refs/heads/main/SmartUK/' .. getARZServerNumber() .. '/SmartUK.json', path_uk)
+						downloadFileFromUrlToPath('https://vanguard-helper.ru/files/SmartUK/' .. getARZServerNumber() .. '/SmartUK.json', path_uk)
 						imgui.OpenPopup(fa.CIRCLE_INFO .. u8' Vanguard Helper - Оповещение##donwloadsmartuk')
 					end
 					if imgui.BeginPopupModal(fa.CIRCLE_INFO .. u8' Vanguard Helper - Оповещение##donwloadsmartuk', _, imgui.WindowFlags.NoCollapse  + imgui.WindowFlags.NoResize) then
@@ -4439,7 +4473,7 @@ imgui.OnFrame(
 						end
 						imgui.SameLine()
 						if imgui.Button(fa.CIRCLE_PLAY .. u8' Открыть облако', imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-							openLink('https://github.com/Milky182828/vanguard/raw/refs/heads/main/SmartUK/')
+							openLink('https://vanguard-helper.ru/files/SmartUK/')
 							MainWindow[0] = false
 						end
 						imgui.EndPopup()
@@ -4643,7 +4677,7 @@ imgui.OnFrame(
 					imgui.SetCursorPosX(105 * settings.general.custom_dpi)
 					if imgui.Button(fa.DOWNLOAD .. u8' Загрузить ##smartpdd') then
 						download_smartpdd = true
-						downloadFileFromUrlToPath('https://github.com/Milky182828/vanguard/raw/refs/heads/main/SmartPDD/' .. getARZServerNumber() .. '/SmartPDD.json', path_pdd)
+						downloadFileFromUrlToPath('https://vanguard-helper.ru/files/SmartPDD/' .. getARZServerNumber() .. '/SmartPDD.json', path_pdd)
 						imgui.OpenPopup(fa.CIRCLE_INFO .. u8' Vanguard Helper - Оповещение##donwloadsmartpdd')
 					end
 					if imgui.BeginPopupModal(fa.CIRCLE_INFO .. u8' Vanguard Helper - Оповещение##donwloadsmartpdd', _, imgui.WindowFlags.NoCollapse  + imgui.WindowFlags.NoResize) then
@@ -4667,7 +4701,7 @@ imgui.OnFrame(
 						end
 						imgui.SameLine()
 						if imgui.Button(fa.CIRCLE_PLAY .. u8' Открыть облако', imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-							openLink('https://github.com/Milky182828/vanguard/raw/refs/heads/main/SmartPDD/')
+							openLink('https://vanguard-helper.ru/files/SmartPDD/')
 							MainWindow[0] = false
 						end
 						imgui.EndPopup()
@@ -6343,26 +6377,43 @@ imgui.OnFrame(
 imgui.OnFrame(
     function() return UpdateWindow[0] end,
     function(player)
-		imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.Begin(fa.CIRCLE_INFO .. u8" Оповещение##need_update_helper", _, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize )
-		if not isMonetLoader() then change_dpi() end
-		imgui.CenterText(u8'У вас сейчас установлена версия хелпера ' .. u8(tostring(thisScript().version)) .. ".")
-		imgui.CenterText(u8'В базе данных найдена версия хелпера - ' .. u8(updateVer) .. ".")
-		imgui.CenterText(u8'Рекомендуется обновиться, дабы иметь весь актуальный функционал!')
-		imgui.Separator()
-		imgui.CenterText(u8('Что нового в версии ') .. u8(updateVer) .. ':')
-		imgui.Text(u8(updateInfoText))
-		imgui.Separator()
-		if imgui.Button(fa.CIRCLE_XMARK .. u8' Не обновлять ',  imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-			UpdateWindow[0] = false
-		end
-		imgui.SameLine()
-		if imgui.Button(fa.DOWNLOAD ..u8' Загрузить новую версию',  imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
-			download_helper = true
-			downloadFileFromUrlToPath(updateUrl, path_helper)
-			UpdateWindow[0] = false
-		end
-		imgui.End()
+        imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+        imgui.Begin(fa.CIRCLE_INFO .. u8" Оповещение##need_update_helper", nil,
+            imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
+
+        if not isMonetLoader() then change_dpi() end
+
+        imgui.CenterText(u8('У вас сейчас установлена версия хелпера ') .. u8(tostring(thisScript().version)) .. u8("."))
+        imgui.CenterText(u8('В базе данных найдена версия хелпера - ') .. u8(updateVer) .. u8("."))
+        imgui.CenterText(u8('Рекомендуется обновиться, дабы иметь весь актуальный функционал!'))
+
+        imgui.Separator()
+        imgui.CenterText(u8('Что нового в версии ') .. u8(updateVer) .. u8(':'))
+
+        -- Печатаем текст, защищая от nil и недопустимых символов
+        if updateInfoText then
+            imgui.Text(u8(tostring(updateInfoText)))
+        else
+            imgui.Text(u8("Нет информации об обновлении."))
+        end
+
+        imgui.Separator()
+
+        if imgui.Button(fa.CIRCLE_XMARK .. u8' Не обновлять ',
+                imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            UpdateWindow[0] = false
+        end
+
+        imgui.SameLine()
+
+        if imgui.Button(fa.DOWNLOAD .. u8' Загрузить новую версию',
+                imgui.ImVec2(300 * settings.general.custom_dpi, 25 * settings.general.custom_dpi)) then
+            download_helper = true
+            downloadFileFromUrlToPath(updateUrl, path_helper)
+            UpdateWindow[0] = false
+        end
+
+        imgui.End()
     end
 )
 
@@ -6512,6 +6563,121 @@ imgui.OnFrame(
 			sampAddChatMessage('[Vanguard Helper] {ffffff}Прозиошла ошибка, ID игрока недействителен!', message_color)
 			SobesMenu[0] = false
 		end
+    end
+)
+
+imgui.OnFrame(
+    function() return DoprosMenu[0] end,
+    function(player)
+        if player_id ~= nil and isParamSampID(player_id) then
+            imgui.SetNextWindowPos(imgui.ImVec2(sizeX / 2, sizeY / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+            imgui.Begin(fa.USER_SECRET .. u8' Проведение опроса ' .. sampGetPlayerNickname(player_id), DoprosMenu, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.AlwaysAutoResize)
+            change_dpi()
+
+            if imgui.BeginChild('dopros1', imgui.ImVec2(240 * settings.general.custom_dpi, 270 * settings.general.custom_dpi), true) then
+                imgui.CenterColumnText(fa.BOOKMARK .. u8" Основное")
+                imgui.Separator()
+
+                if imgui.Button(fa.PLAY .. u8" Начать опрос", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    lua_thread.create(function()
+                        sampSendChat("Здравствуйте, я сотрудник ФСБ " .. settings.player_info.name_surname .. ". В спец.звании " .. settings.player_info.fraction_rank .. ".")
+                        wait(3000)
+                        sampSendChat("Сейчас будет проведён опрос в связи с зафиксированными нарушениями.")
+                        wait(3000)
+                        sampSendChat("/do На столе лежит папка с документами.")
+                    end)
+                end
+
+                if imgui.Button(fa.FILE_PEN .. u8" Передать документ о неразглашении", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    lua_thread.create(function()
+                        sampSendChat("/me достал документ о неразглашении и положил его перед сотрудником.")
+                        wait(3000)
+                        sampSendChat("/do Документ о неразглашении лежит на столе.")
+                        wait(3000)
+                        sampSendChat("Прошу ознакомиться и подписать документ о неразглашении.")
+                    end)
+                end
+
+                if imgui.Button(fa.VIDEO .. u8" Установить камеру", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    lua_thread.create(function()
+                        sampSendChat("/me установил камеру на стол, направив на сотрудника.")
+                        wait(3000)
+                        sampSendChat("/do Камера записывает процесс опроса.")
+                    end)
+                end
+
+                if imgui.Button(fa.FILE_PEN .. u8" Заполнить протокол", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    lua_thread.create(function()
+                        sampSendChat("/me заполнил протокол опроса, указав данные: ФИО " .. sampGetPlayerNickname(player_id) .. ", сотрудник ФСБ " .. settings.player_info.name_surname .. ".")
+                        wait(3000)
+                        sampSendChat("/do Протокол заполнен и подписан сотрудником ФСБ.")
+                    end)
+                end
+
+                if imgui.Button(fa.USER .. u8" Спросить про адвоката", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    lua_thread.create(function()
+                        sampSendChat("Нуждаетесь ли вы в помощи адвоката для участия в опросе?")
+                        wait(3000)
+                        sampSendChat("Если у вас есть частный адвокат, укажите его данные..")
+						wait(3000)
+                        sampSendChat("В противном случае вам будет предоставлен государственный адвокат.")
+                    end)
+                end
+            imgui.EndChild()
+            end
+
+            imgui.SameLine()
+
+            if imgui.BeginChild('dopros2', imgui.ImVec2(240 * settings.general.custom_dpi, 270 * settings.general.custom_dpi), true) then
+                imgui.CenterColumnText(fa.BOOKMARK .. u8" Вопросы")
+                imgui.Separator()
+
+                if imgui.Button(fa.CIRCLE_QUESTION .. u8" Причина нахождения на месте нарушения?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    sampSendChat("Назовите причину вашего нахождения на месте зафиксированного нарушения.")
+                end
+
+                if imgui.Button(fa.CIRCLE_QUESTION .. u8" Были ли при исполнении?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    sampSendChat("Находились ли вы при исполнении служебных обязанностей в момент инцидента?")
+                end
+
+                if imgui.Button(fa.CIRCLE_QUESTION .. u8" Кто может подтвердить ваши слова?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    sampSendChat("Назовите лиц, которые могут подтвердить ваши слова.")
+                end
+
+                if imgui.Button(fa.CIRCLE_QUESTION .. u8" Служебный транспорт использовали?", imgui.ImVec2(-1, 25 * settings.general.custom_dpi)) then
+                    sampSendChat("Использовали ли вы служебный транспорт в момент происшествия?")
+                end
+            imgui.EndChild()
+            end
+
+            imgui.SameLine()
+
+            if imgui.BeginChild('dopros3', imgui.ImVec2(180 * settings.general.custom_dpi, -1), true) then
+                imgui.CenterColumnText(fa.CIRCLE_XMARK .. u8" Развязка опроса")
+                imgui.Separator()
+
+                if imgui.Selectable(u8"Освободить с предупреждением") then
+                    lua_thread.create(function()
+                        sampSendChat("Вы везунчик, освобождены с предупреждением. Будьте осторожны в дальнейшем.")
+                        DoprosMenu[0] = false
+                    end)
+                end
+
+                if imgui.Selectable(u8"Уволить по федеральному постановлению") then
+                    lua_thread.create(function()
+                        sampSendChat("/me оформил документы на увольнение и передал их в отдел кадров.")
+                        wait(3000)
+                        sampSendChat("На этом опрос окончен.")
+                        DoprosMenu[0] = false
+                    end)
+                end
+            imgui.EndChild()
+            end
+
+        else
+            sampAddChatMessage('[Vanguard Helper] {ffffff}Произошла ошибка, ID игрока недействителен!', message_color)
+            DoprosMenu[0] = false
+        end
     end
 )
 
